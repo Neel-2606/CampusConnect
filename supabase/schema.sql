@@ -47,7 +47,7 @@ CREATE TABLE event_categories (
 CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   club_id UUID REFERENCES clubs(id) ON DELETE CASCADE,
-  category_id UUID REFERENCES event_categories(id) ON DELETE SET NULL,
+  category_id UUID CONSTRAINT fk_events_category REFERENCES event_categories(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   description TEXT,
   banner_url TEXT,
