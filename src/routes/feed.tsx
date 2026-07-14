@@ -1,24 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { User } from "@supabase/supabase-js";
-import {
-  Bold,
-  Code2,
-  Eye,
-  Heading2,
-  Italic,
-  Link2,
-  List,
-  ListOrdered,
-  MessageCircle,
-  MessageSquareText,
-  PenLine,
-  Pencil,
-  Quote,
-  Sparkles,
-} from "lucide-react";
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
-import ReactMarkdown from "react-markdown";
+import { RoleBadge } from "@/components/RoleBadge";
+import { MessageCircle, PenLine, Sparkles } from "lucide-react";
 
 import { SiteShell } from "@/components/site/SiteShell";
 import { createClient } from "@/lib/supabase/client";
@@ -38,165 +20,7 @@ export const Route = createFileRoute("/feed")({
   component: Feed,
 });
 
-type MarkdownEditorProps = {
-  value: string;
-  onChange: (value: string) => void;
-};
-
-type ToolbarAction = {
-  label: string;
-  icon: typeof Bold;
-  before: string;
-  after?: string;
-  placeholder?: string;
-  linePrefix?: boolean;
-};
-
-const toolbarActions: ToolbarAction[] = [
-  { label: "Bold", icon: Bold, before: "**", after: "**", placeholder: "bold text" },
-  { label: "Italic", icon: Italic, before: "*", after: "*", placeholder: "italic text" },
-  { label: "Heading", icon: Heading2, before: "## ", placeholder: "Heading", linePrefix: true },
-  { label: "Bulleted list", icon: List, before: "- ", placeholder: "List item", linePrefix: true },
-  {
-    label: "Numbered list",
-    icon: ListOrdered,
-    before: "1. ",
-    placeholder: "List item",
-    linePrefix: true,
-  },
-  { label: "Quote", icon: Quote, before: "> ", placeholder: "Quote", linePrefix: true },
-  { label: "Inline code", icon: Code2, before: "`", after: "`", placeholder: "code" },
-  {
-    label: "Link",
-    icon: Link2,
-    before: "[",
-    after: "](https://example.com)",
-    placeholder: "link text",
-  },
-];
-
-export type MarkdownEditorRef = {
-  focusWrite: () => void;
-};
-
-const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(
-  ({ value, onChange }, ref) => {
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const [mode, setMode] = useState<"write" | "preview">("write");
-
-    useImperativeHandle(ref, () => ({
-      focusWrite: () => {
-        setMode("write");
-        requestAnimationFrame(() => {
-          textareaRef.current?.focus();
-          textareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-        });
-      },
-    }));
-
-    const applyMarkdown = ({
-      before,
-      after = "",
-      placeholder = "text",
-      linePrefix,
-    }: ToolbarAction) => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const selectedText = value.slice(start, end) || placeholder;
-      const prefix = linePrefix && start > 0 && value[start - 1] !== "\n" ? `\n${before}` : before;
-      const replacement = `${prefix}${selectedText}${after}`;
-      const nextValue = `${value.slice(0, start)}${replacement}${value.slice(end)}`;
-
-      onChange(nextValue);
-
-      requestAnimationFrame(() => {
-        textarea.focus();
-        const selectionStart = start + prefix.length;
-        textarea.setSelectionRange(selectionStart, selectionStart + selectedText.length);
-      });
-    };
-
-    return (
-      <div className="neu-border bg-white" aria-label="Markdown post editor">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-black bg-sky p-2">
-          <div className="flex flex-wrap gap-1" role="toolbar" aria-label="Markdown formatting">
-            {toolbarActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.label}
-                  type="button"
-                  onClick={() => applyMarkdown(action)}
-                  className="neu-border bg-white p-2 transition hover:-translate-y-0.5 hover:bg-lime focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
-                  aria-label={action.label}
-                  title={action.label}
-                >
-                  <Icon size={16} strokeWidth={2.5} aria-hidden="true" />
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex" aria-label="Editor mode">
-            <button
-              type="button"
-              onClick={() => setMode("write")}
-              className={`neu-border flex items-center gap-1 px-3 py-2 font-mono text-[10px] font-bold uppercase ${
-                mode === "write" ? "bg-black text-cream" : "bg-white"
-              }`}
-              aria-pressed={mode === "write"}
-            >
-              <Pencil size={14} aria-hidden="true" /> Write
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("preview")}
-              className={`neu-border -ml-0.5 flex items-center gap-1 px-3 py-2 font-mono text-[10px] font-bold uppercase ${
-                mode === "preview" ? "bg-black text-cream" : "bg-white"
-              }`}
-              aria-pressed={mode === "preview"}
-            >
-              <Eye size={14} aria-hidden="true" /> Preview
-            </button>
-          </div>
-        </div>
-
-        {mode === "write" ? (
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            placeholder="Share an update using Markdown…"
-            rows={7}
-            className="min-h-44 w-full resize-y bg-white p-4 font-mono text-sm outline-none placeholder:text-gray-500 focus:bg-cream/40"
-            aria-label="Post content in Markdown"
-          />
-        ) : (
-          <div className="min-h-44 bg-white p-4" aria-live="polite">
-            {value.trim() ? (
-              <div className="markdown-content font-mono text-sm leading-relaxed">
-                <ReactMarkdown>{value}</ReactMarkdown>
-              </div>
-            ) : (
-              <div className="flex min-h-36 flex-col items-center justify-center gap-2 text-center text-gray-500">
-                <MessageSquareText size={32} aria-hidden="true" />
-                <p className="font-mono text-sm">Your Markdown preview will appear here.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="border-t-2 border-black bg-cream px-4 py-2 font-mono text-[10px] uppercase">
-          Raw Markdown is saved. HTML is not rendered.
-        </div>
-      </div>
-    );
-  },
-);
-MarkdownEditor.displayName = "MarkdownEditor";
+type MemberRole = "admin" | "organizer" | "member" | "alumni";
 
 function Feed() {
   const supabase = createClient();
@@ -245,10 +69,10 @@ function Feed() {
         .from("posts")
         .select(
           `
-          id, content, created_at,
-          profiles (full_name),
-          clubs (name),
-          comments (id, content, created_at, profiles (full_name))
+          id, content, created_at, club_id,
+          profiles (id, full_name),
+          clubs (id, name, club_members (user_id, role)),
+          comments (id, content, created_at, profiles (id, full_name))
           `,
         )
         .is("deleted_at", null)
@@ -427,14 +251,20 @@ function Feed() {
             posts.map((post) => {
               const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
               const club = Array.isArray(post.clubs) ? post.clubs[0] : post.clubs;
+              const clubMembers = Array.isArray(club?.club_members) ? club.club_members : [];
+              const authorMembership = clubMembers.find(
+                (m: { user_id: string; role: string }) => m.user_id === author?.id,
+              );
+              const authorRole = (authorMembership?.role ?? "member") as MemberRole;
               const postComments = Array.isArray(post.comments) ? post.comments : [];
 
               return (
                 <article key={post.id} className="neu-border bg-white p-6">
                   <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-black pb-3">
                     <div>
-                      <p className="font-display text-lg font-bold">
+                      <p className="font-display text-lg font-bold flex items-center gap-2">
                         {author?.full_name || "Unknown User"}
+                        <RoleBadge role={authorRole} />
                       </p>
                       <p className="font-mono text-xs flex flex-wrap items-center">
                         in {club?.name || "Unknown Club"} · {timeAgo(post.created_at)}
@@ -489,8 +319,15 @@ function Feed() {
                       return (
                         <div key={comment.id} className="neu-border bg-cream p-3">
                           <div className="flex justify-between">
-                            <p className="font-mono text-xs font-bold uppercase">
+                            <p className="font-mono text-xs font-bold uppercase flex items-center gap-1.5">
                               {commentAuthor?.full_name || "Unknown User"}
+                              {(() => {
+                                const cm = clubMembers.find(
+                                  (m: { user_id: string; role: string }) =>
+                                    m.user_id === commentAuthor?.id,
+                                );
+                                return <RoleBadge role={(cm?.role ?? "member") as MemberRole} />;
+                              })()}
                             </p>
                             <p className="font-mono text-[10px] text-gray-500">
                               {timeAgo(comment.created_at)}
