@@ -28,11 +28,13 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b-2 border-black bg-white text-black dark:border-cream dark:bg-black dark:text-cream">
+    <header className="college-nav sticky top-0 z-40 border-b-2 border-black bg-white text-black dark:border-cream dark:bg-[#123a57] dark:text-cream">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
-        <Link to="/" className="font-display text-xl font-bold md:text-2xl">
+        <Link to="/" className="font-display text-xl font-bold text-[#123a57] md:text-2xl">
           <span style={{ letterSpacing: "0.04em" }}>CAMPUS</span>
-          <span className="bg-black px-1 text-cream dark:bg-cream dark:text-black">CONNECT</span>
+          <span className="bg-[#123a57] px-1 text-[#fef8eb] dark:bg-cream dark:text-[#123a57]">
+            CONNECT
+          </span>
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {links.map((l) => {
@@ -45,8 +47,8 @@ export function Navbar() {
               <Link
                 key={l.to}
                 to={l.to}
-                className={`font-mono text-sm font-bold uppercase hover:underline ${
-                  isActive ? "underline underline-offset-4 decoration-2" : ""
+                className={`font-mono text-sm font-bold uppercase text-[#123a57] hover:underline ${
+                  isActive ? "underline underline-offset-4 decoration-2 decoration-[#f5c66b]" : ""
                 }`}
                 style={{ letterSpacing: "0.05em" }}
               >
@@ -61,26 +63,19 @@ export function Navbar() {
 
           {user ? (
             <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-lime font-mono text-xs font-bold uppercase">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-[#f5c66b] font-mono text-xs font-bold uppercase text-[#123a57]">
                 {user.email?.[0].toUpperCase() ?? "U"}
               </div>
             </Link>
           ) : (
             <Link
               to="/auth"
-              className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream hover:bg-cream hover:text-black"
+              className="neu-border neu-press bg-[#123a57] px-4 py-2 font-mono text-xs font-bold uppercase text-[#fef8eb] hover:bg-[#f5c66b] hover:text-[#123a57] dark:bg-cream dark:text-[#123a57] dark:hover:bg-[#123a57] dark:hover:text-cream"
               style={{ letterSpacing: "0.08em" }}
             >
               Sign in
             </Link>
           )}
-          <Link
-            to="/auth"
-            className="neu-border neu-press bg-black px-4 py-2 font-mono text-xs font-bold uppercase text-cream hover:bg-cream hover:text-black dark:bg-cream dark:text-black dark:hover:bg-black dark:hover:text-cream"
-            style={{ letterSpacing: "0.08em" }}
-          >
-            Sign in
-          </Link>
         </div>
       </div>
     </header>

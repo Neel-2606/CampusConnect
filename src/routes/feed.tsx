@@ -325,13 +325,14 @@ function Feed() {
 
   return (
     <SiteShell>
-      <section className="border-b-2 border-black bg-peach px-4 py-14 md:px-6">
+      <section className="border-b border-gray-300 px-4 py-14 md:px-6">
         <div className="mx-auto max-w-4xl">
           <p className="eyebrow font-bold">Discussion feed</p>
-          <h1 className="mt-2 text-4xl font-bold md:text-6xl">What clubs are talking about.</h1>
+          <h1 className="mt-2 text-4xl font-bold text-[#123a57] md:text-6xl">
+            What clubs are talking about.
+          </h1>
         </div>
       </section>
-
       <section className="bg-cream px-4 py-12 md:px-6">
         <div className="mx-auto max-w-4xl space-y-6">
           <div className="space-y-3">
@@ -452,7 +453,7 @@ function Feed() {
                         </span>
                       </p>
                     </div>
-                    <span className="neu-border bg-lime px-2 py-1 font-mono text-[10px] font-bold uppercase">
+                    <span className="neu-border bg-[#f5c66b] px-2 py-1 font-mono text-[10px] font-bold uppercase text-[#123a57]">
                       Markdown post
                     </span>
                   </header>

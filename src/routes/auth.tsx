@@ -2,8 +2,8 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Sparkle } from "@/components/site/Sparkle";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button"; // Added unified Button component import
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -86,15 +86,24 @@ function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-cream px-4 py-16">
+    <div className="college-shell relative flex min-h-screen items-center justify-center px-4 py-16">
       <Sparkle className="absolute left-8 top-8" size={20} />
       <Sparkle className="absolute right-8 top-8" size={20} />
       <Sparkle className="absolute bottom-8 left-8" size={16} />
       <Sparkle className="absolute bottom-8 right-8" size={16} />
       <div className="w-full max-w-md">
-        <Link to="/" className="mb-6 inline-block font-display text-2xl font-bold">
-          CAMPUS<span className="bg-black px-1 text-cream">CONNECT</span>
-        </Link>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Link to="/" className="font-display text-2xl font-bold text-[#123a57]">
+            CAMPUS<span className="bg-[#123a57] px-1 text-white">CONNECT</span>
+          </Link>
+          <Link
+            to="/"
+            className="flex items-center gap-2 font-mono text-xs font-bold uppercase text-[#123a57] underline-offset-4 hover:underline"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Home
+          </Link>
+        </div>
         <div className="neu-border bg-white p-8">
           <p className="eyebrow mb-2 font-bold">
             {mode === "signin" ? "Welcome back" : "Get started"}
@@ -212,7 +221,7 @@ function Field({
           </span>
         )}
       </span>
-      <div className="relative flex items-center border-0 border-b-2 border-black focus-within:bg-lime/40 group">
+      <div className="relative flex items-center border-0 border-b-2 border-black focus-within:bg-gray-100/40 group">
         <input
           type={type}
           name={name}
