@@ -46,7 +46,7 @@ jobs:
       - name: Evaluate all checks and label PR
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_PAT }}
+          github-token: ${{ secrets.GH_PAT || github.token }}
           script: |
             const { owner, repo } = context.repo;
 
