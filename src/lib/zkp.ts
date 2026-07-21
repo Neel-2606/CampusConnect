@@ -1,45 +1,42 @@
+// @ts-expect-error: snarkjs has no types
 import * as snarkjs from "snarkjs";
 
-export interface VoteProofInputs {
-  nullifier: string;
-  trapdoor: string;
-  merkleProof: {
-    pathElements: string[];
-    pathIndices: number[];
-  };
-}
-
-export interface ZkProof {
-  proof: object;
+export interface VoteProof {
+  proof: Record<string, unknown>;
   publicSignals: string[];
 }
 
 /**
- * Generates a Zero-Knowledge Proof for anonymous voting in the browser.
+ * Generates a Zero-Knowledge Proof (ZKP) in the browser for a vote.
  *
- * @param inputs The secret inputs (nullifier, trapdoor, and merkle proof)
- * @returns The ZK proof and the public signals (which includes the nullifier_hash)
+ * @param secret The user's secret membership token.
+ * @param electionId The ID of the election being voted in.
+ * @param voteChoice The user's vote choice.
+ * @returns A promise that resolves to the generated ZKP and public signals.
  */
-export async function generateVoteProof(inputs: VoteProofInputs): Promise<ZkProof> {
-  const inputSignals = {
-    nullifier: inputs.nullifier,
-    trapdoor: inputs.trapdoor,
-    pathElements: inputs.merkleProof.pathElements,
-    pathIndices: inputs.merkleProof.pathIndices,
+export async function generateVoteProof(
+  secret: string | number,
+  electionId: string | number,
+  voteChoice: string | number,
+): Promise<VoteProof> {
+  // In a real implementation, the secret would be hashed or formatted as required by the circuit.
+  // The WASM and ZKEY files should be served statically (e.g., in the public directory).
+  const wasmFile = "/zkp/vote.wasm";
+  const zkeyFile = "/zkp/vote_final.zkey";
+
+  // The input to the circuit. Must match the signals defined in the Circom circuit.
+  const input = {
+    secret,
+    electionId,
+    voteChoice,
   };
 
   try {
-    // Generate the proof using snarkjs
-    // We assume the circuit.wasm and circuit_final.zkey are served from the public folder
-    const { proof, publicSignals } = await snarkjs.groth16.fullProve(
-      inputSignals,
-      "/zkp/vote_circuit.wasm",
-      "/zkp/vote_circuit_final.zkey",
-    );
+    const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, wasmFile, zkeyFile);
 
     return { proof, publicSignals };
   } catch (error) {
-    console.error("Error generating ZK proof:", error);
-    throw new Error("Failed to generate Zero-Knowledge Proof for voting.");
+    console.error("Failed to generate vote ZKP:", error);
+    throw new Error("Proof generation failed. Ensure your membership token is valid.");
   }
 }

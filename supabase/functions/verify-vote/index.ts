@@ -1,75 +1,102 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as snarkjs from "npm:snarkjs";
+// @ts-ignore
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
+// @ts-ignore
+import * as snarkjs from "https://esm.sh/snarkjs@0.7.6";
+// @ts-ignore
 import vKey from "./verification_key.json" with { type: "json" };
 
+declare const Deno: any;
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+serve(async (req: Request) => {
+  // Handle CORS
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { proof, publicSignals, pollId, voteData } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    
+    // We use service role to bypass RLS since users voting are anonymous
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    if (!proof || !publicSignals || !pollId) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: proof, publicSignals, pollId" }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const { proof, publicSignals, electionId, voteChoice } = await req.json();
+
+    if (!proof || !publicSignals || !electionId || !voteChoice) {
+      return new Response(JSON.stringify({ error: "Missing required parameters" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // 1. Verify the Zero-Knowledge Proof
+    // 1. Verify the ZKP
+    // The public signals typically contain:
+    // [0]: nullifier hash (to prevent double voting)
+    // [1]: election ID (to ensure proof is for this election)
     const isValid = await snarkjs.groth16.verify(vKey, publicSignals, proof);
     if (!isValid) {
-      return new Response(
-        JSON.stringify({ error: "Invalid Zero-Knowledge Proof" }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid ZKP proof" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // nullifierHash is usually the first public signal in anonymous voting circuits
-    const nullifierHash = publicSignals[0]; 
+    const nullifier = publicSignals[0];
 
-    // 2. Initialize Supabase Admin Client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // 2. Check if nullifier has already been used for this election
+    const { data: existingVote, error: checkError } = await supabase
+      .from("votes")
+      .select("id")
+      .eq("election_id", electionId)
+      .eq("nullifier", nullifier)
+      .single();
 
-    // 3. Record the vote and prevent double-voting using the nullifier hash
-    // We insert into vote_nullifiers. If it violates the UNIQUE constraint, the user has already voted.
-    const { error: nullifierError } = await supabaseClient
-      .from('vote_nullifiers')
-      .insert({ poll_id: pollId, nullifier_hash: nullifierHash });
-
-    if (nullifierError) {
-      if (nullifierError.code === '23505') { // Postgres unique_violation code
-        return new Response(
-          JSON.stringify({ error: "Double voting detected. This nullifier has already been used." }),
-          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      throw nullifierError;
+    if (existingVote) {
+      return new Response(JSON.stringify({ error: "Double voting detected. Nullifier already used." }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    // PGRST116 is "No rows found", which is expected if the nullifier is unused
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw new Error(`Database error: ${checkError.message}`);
     }
 
-    // 4. Record the actual vote (anonymously)
-    // Assuming there's a 'votes' table. If not, this is where it would be recorded.
-    // await supabaseClient.from('votes').insert({ poll_id: pollId, data: voteData });
+    // 3. Record the vote securely against the nullifier
+    const { error: insertError } = await supabase
+      .from("votes")
+      .insert({
+        election_id: electionId,
+        choice: voteChoice,
+        nullifier: nullifier,
+        // user_id is intentionally omitted to preserve anonymity
+      });
+
+    if (insertError) {
+      throw new Error(`Failed to record vote: ${insertError.message}`);
+    }
 
     return new Response(
-      JSON.stringify({ message: "Vote successfully cast and verified anonymously!" }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ message: "Vote successfully recorded" }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
-  } catch (error: any) {
-    console.error(error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  } catch (error: unknown) {
+    console.error("Function error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
