@@ -34,6 +34,7 @@ import PrivacyPolicy from "./routes/privacy";
 import TermsOfService from "./routes/terms";
 import PendingClubsAdmin from "./routes/admin.clubs.pending";
 import MessagesRoute from "./routes/messages";
+import NotificationsRoute from "./routes/notifications";
 import ProfileRoute from "./routes/profile.$handle";
 import { NotFoundPage } from "./components/NotFoundPage";
 
@@ -112,6 +113,7 @@ const router = createBrowserRouter(
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/messages" element={<MessagesRoute />} />
+      <Route path="/notifications" element={<NotificationsRoute />} />
       <Route path="/admin/clubs/pending" element={<PendingClubsAdmin />} />
       <Route path="/directory" element={<Directory />} />
       <Route path="/profile/:handle" element={<ProfileRoute />} />
